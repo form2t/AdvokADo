@@ -35,6 +35,8 @@ defender.py
 eliza.py
 test.py
 avatar.psd
+form2t.session
+form2t.session-journal
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
