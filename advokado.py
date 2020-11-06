@@ -16,6 +16,7 @@ ADEPT_ID = int(config['Telegram']['ADEPT_ID'])
 cw_ID = int(config['Telegram']['cw_ID'])
 bot = telebot.TeleBot(token, True, 4)
 last_pinned_msg = None
+fight_user = ''
 print('Arbeiten!')
 
 
@@ -110,84 +111,84 @@ def start_message(message):
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
     if message.text == "amb":
-        bot.send_message(message.chat.id, 'Kill Ambush', reply_markup=get_btn_fight_ambush())
+        s = "<u><b>Killer's Ambush</b></u>\nform2t\nvesknam\nAnna\nvlad\nTime 02:21"
+        btn_fight = get_two_button_fight('12312kgsdflskjfdbnsdf')
+        bot.send_message(chat_id=ADEPT_ID, text=s, parse_mode='HTML', reply_markup=btn_fight)
 
     if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("враждебных существ",
                                                                                            message.text.lower()):
         # (datetime.utcfromtimestamp(int(message.forward_date)).strftime('%Y-%m-%d %H:%M:%S'))
-        if message.forward_from.id == cw_ID and re.search("враждебных существ", message.text.lower()):
-            msg_date = datetime.utcfromtimestamp(int(message.forward_date))
-            date_now = datetime.now().utcnow()
-            add_time = 3 * 60
-            if re.search("ambush", message.text.lower()):
-                add_time = 5 * 60
+        msg_date = datetime.utcfromtimestamp(int(message.forward_date))
+        date_now = datetime.now().utcnow()
+        add_time = 3 * 60
+        if re.search("ambush", message.text.lower()):
+            add_time = 5 * 60
+        if msg_date + timedelta(seconds=add_time) > date_now:
+            bot.pin_chat_message(message.chat.id, message.message_id)
 
-            if msg_date + timedelta(seconds=add_time) > date_now:
-                bot.pin_chat_message(message.chat.id, message.message_id)
+            ####################################
+            text = message.text
+            fight = text[text.find('/fight'):len(text)]
+            btn_fight = get_two_button_fight(fight)
 
-                ####################################
-                text = message.text
-                fight = text[text.find('/fight'):len(text)]
-                btn_fight = get_btn_CW(fight)
+            delta = msg_date + timedelta(seconds=add_time) - date_now
+            msg = bot.send_message(message.chat.id, text="<u><b>Killer's Ambush</b></u>" + "\n\nTime left "
+                                                         + '{:02}:{:02}'.format(delta.seconds // 60,
+                                                                                delta.seconds % 60),
+                                   reply_markup=btn_fight, parse_mode='HTML')
 
-                delta = msg_date + timedelta(seconds=add_time) - date_now
-                msg = bot.send_message(message.chat.id, 'Achtung! Achtung! Partizanen',
-                                       reply_to_message_id=message.message_id, reply_markup=btn_fight)
-                bot.send_message(message.chat.id, 'Kill Ambush', reply_markup=get_btn_fight_ambush())
-                thread_timer = threading.Thread(target=check_send_messages, args=(delta.seconds, 10, msg, btn_fight))
-                thread_timer.daemon = False
-                thread_timer.start()
+            thread_timer = threading.Thread(target=check_send_messages, args=(delta.seconds, 10, msg, btn_fight))
+            thread_timer.daemon = False
+            thread_timer.start()
 
-            else:
-                unpin_message(message)
-
-
-# def add_adepts(message):
-#  bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id,
-#                        text="До конца осталось ", reply_markup=get_btn_fight_ambush())
+        else:
+            bot.pin_chat_message(message.chat.id, message.message_id)
+            unpin_message(message)
 
 
 def unpin_message(message):
-    bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id,
-                          text="Сообщение устарело")
-    bot.unpin_chat_message(message.chat.id)
-    # global last_pinned_msg
-    # if last_pinned_msg is not None:
-    #    bot.pin_chat_message(message.chat.id, last_pinned_msg.message_id)
-    #    last_pinned_msg = None
+    try:
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id,
+                              text="Сообщение устарело")
+        bot.unpin_chat_message(message.chat.id)
+        # global last_pinned_msg
+        # if last_pinned_msg is not None:
+        #    bot.pin_chat_message(message.chat.id, last_pinned_msg.message_id)
+        #    last_pinned_msg = None
+    except:
+        print("don't unpin_message  ~~~" + str(
+            time.strftime("%d.%m.%y %H:%M:%S", time.localtime())) + "\n\n" + traceback.format_exc() + "\n\n")
 
 
-def get_btn_fight_ambush():
+def get_two_button_fight(query):
     keyboard = telebot.types.InlineKeyboardMarkup()
-    btn = telebot.types.InlineKeyboardButton(text="GoFight", callback_data="fightAmbush")
-    keyboard.add(btn)
-    return keyboard
-
-
-def get_btn_CW(query):
-    keyboard = telebot.types.InlineKeyboardMarkup()
-    button_1 = telebot.types.InlineKeyboardButton(text="SendToCW", switch_inline_query=query)
-    keyboard.add(button_1)
+    btn_1 = telebot.types.InlineKeyboardButton(text="SendToCW", switch_inline_query=query)
+    btn_2 = telebot.types.InlineKeyboardButton(text="GoFight", callback_data=query)
+    keyboard.add(btn_1, btn_2)
     return keyboard
 
 
 # это функция отправки сообщений по таймеру
 def check_send_messages(duration, dt, message, btn_fight):
-    #btn_fight = get_btn_CW(fight)
     while duration:
         # пауза между проверками, чтобы не загружать процессор
         time.sleep(dt)
         duration -= dt
         if duration < 0:
             duration = 0
-        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id,
-                              text="До конца осталось " + str(duration), reply_markup=btn_fight)
+
+        global fight_user
+        bot.edit_message_text(chat_id=ADEPT_ID, message_id=message.message_id,
+                              text="<u><b>Killer's Ambush</b></u>\n\n" + fight_user + "\nTime left "
+                                   + '{:02}:{:02}'.format(duration // 60, duration % 60),
+                              reply_markup=btn_fight, parse_mode='HTML')
+
     unpin_message(message)
 
 
 # Великолепный план, Уолтер. Просто охуенный, если я правильно понял. Надёжный, блядь, как швейцарские часы.
 
-@bot.callback_query_handler(func=lambda msg: re.search('fightAmbush', msg.data))
+@bot.callback_query_handler(func=lambda msg: re.search('fight', msg.data))
 def callback_inline_first(msg):
     try:
         db = DataBase()
@@ -199,19 +200,23 @@ def callback_inline_first(msg):
             tmp = db.select_count_data_fight_ambush(msg.message.message_id)
 
             if tmp[0][0] >= 4:
-               bot.answer_callback_query(msg.id, show_alert=True, text="В следующий раз доблестный воин")
+                bot.answer_callback_query(msg.id, show_alert=True, text="В следующий раз доблестный воин")
             else:
                 data = [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
                 db.insert_data_ambush(data)
                 users = db.select_user_fight_ambush(msg.message.message_id)
-                user_s = ''
+                global fight_user
+                fight_user = ''
                 for u in users:
-                    user_s += u[0] + '\n'
+                    fight_user += u[0] + '\n'
 
                 bot.edit_message_text(chat_id=ADEPT_ID, message_id=msg.message.message_id,
-                                      text='Kill Ambush\n' + user_s,
-                                      reply_markup=get_btn_fight_ambush())
+                                      text="<u><b>Killer's Ambush</b></u>\n\n" + fight_user + "\n" + msg.message.text[
+                                                                                                     -15:],
+                                      reply_markup=get_two_button_fight(msg.data),
+                                      parse_mode='HTML')
         db.close()
+
     except:
         print("don't insert from callback_inline_first.  ~~~" + str(
             time.strftime("%d.%m.%y %H:%M:%S", time.localtime())) + "\n\n" + traceback.format_exc() + "\n\n")
