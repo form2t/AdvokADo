@@ -1,3 +1,4 @@
+import random
 import schedule as schedule
 import telebot
 import configparser
@@ -105,6 +106,23 @@ def kick_member(message):
 def start_message(message):
     # print(message.chat.id)
     bot.send_message(message.chat.id, 'Живее всех живых')
+
+
+@bot.message_handler(commands=['random'])
+def get_random(message):
+    try:
+        random.seed(message.message_id)
+        digit = message.text.lower()[7:].strip()
+        if digit.isdigit() and int(digit) > 0:
+            bot.send_message(message.chat.id, str(random.randint(1, int(digit))), reply_to_message_id=message.message_id)
+        else:
+            bot.send_message(message.chat.id, 'Параметр не является числом, либо он меньше 1',
+                             reply_to_message_id=message.message_id)
+    except:
+        print("don't get_random.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
+
+
 
 
 # @bot.message_handler(func=all_castle_bigpisi, commands=['add_trigger'])
