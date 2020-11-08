@@ -110,42 +110,43 @@ def start_message(message):
 # @bot.message_handler(func=all_castle_bigpisi, commands=['add_trigger'])
 @bot.message_handler(commands=['add_trigger'])
 def add_trigger(message):
-    db = DataBase()
-    # = message.chat.id
-    # chat_title = message.chat.title
-    print(message)
     try:
         if message.reply_to_message:
             if len(message.text.lower()[13:]) >= 3:
                 # если не существует такой триггер
-                if not db.is_trigger(message.text.lower()[13:]):
+                db = DataBase()
+
+                if not db.is_trigger(message.text.lower()[13:], message.chat.id):
                     # добавить в бд
                     if message.reply_to_message.sticker:
                         data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "sticker",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.photo:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "photo",
+                        #print(message.reply_to_message.photo[0].file_id)
+                        #print(len(message.reply_to_message.photo[0].file_id))
+
+                        data = [message.text.lower()[13:], message.reply_to_message.photo[0].file_id, "photo",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.video:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "video",
+                        data = [message.text.lower()[13:], message.reply_to_message.video.file_id, "video",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.voice:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "voice",
+                        data = [message.text.lower()[13:], message.reply_to_message.voice.file_id, "voice",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.audio:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "audio",
+                        data = [message.text.lower()[13:], message.reply_to_message.audio.file_id, "audio",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.document:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "document",
+                        data = [message.text.lower()[13:], message.reply_to_message.document.file_id, "document",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.video_note:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "video_note",
+                        data = [message.text.lower()[13:], message.reply_to_message.video_note.file_id, "video_note",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.text:
@@ -153,8 +154,11 @@ def add_trigger(message):
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     bot.send_message(message.chat.id, "Триггер '" + message.text[13:] + "' добавлен.")
+
                 else:
                     bot.send_message(message.chat.id, "Триггер '" + message.text[13:] + "' уже занесен в базу.")
+
+                db.close()
             else:
                 bot.send_message(message.chat.id, "Не задано имя триггера или оно короче 3 символов")
         else:
@@ -162,20 +166,59 @@ def add_trigger(message):
     except:
         print("don't add_trigger.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
               + "\n\n" + traceback.format_exc() + "\n\n")
+        db.close()
 
-    db.close()
 
 
-@bot.message_handler(content_types=['sticker'])
-def get_info_about_messages(message):
-    print(message)
+
+# @bot.message_handler(content_types=['sticker'])
+# def get_info_about_messages(message):
+#    print(message)
+
+
+def find_trigger_in_message(message):
+    try:
+        db = DataBase()
+        request = db.is_trigger(message.text.lower(), message.chat.id)
+
+        if request:
+            trigger_type = ''.join(request[0][0])
+            trigger_value = ''.join(request[0][1])
+
+            if trigger_type == "text":
+                bot.send_message(message.chat.id, trigger_value)
+            elif trigger_type == "sticker":
+                bot.send_sticker(message.chat.id, trigger_value)
+            elif trigger_type == "voice":
+                bot.send_voice(message.chat.id, trigger_value)
+            elif trigger_type == "audio":
+                bot.send_audio(message.chat.id, trigger_value)
+            elif trigger_type == "video":
+                bot.send_video(message.chat.id, trigger_value)
+            elif trigger_type == "document":
+                bot.send_document(message.chat.id, trigger_value)
+            elif trigger_type == "photo":
+                bot.send_photo(message.chat.id, trigger_value)
+            elif trigger_type == "video_note":
+                bot.send_video_note(message.chat.id, trigger_value)
+        elif message.text.lower() == "список триггеров":
+            query = db.get_trigger_list(message.chat.id)
+            result = '\n'.join('.'.join(map(str, s)) for s in query)
+            bot.send_message(message.chat.id, '<u><b>Список тригеров:</b></u>\n' + result, parse_mode='HTML')
+
+        db.close()
+    except:
+        print("don't find_trigger_in_message.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
 
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    if message.text.lower() == 'fff':
-        message_id = 'CAACAgIAAx0CTFQ_NgACA0dfp93ekYPFqN6jywABe5OZ5snMm4QAAtEAAzDUnRH8Uep02BrfOx4E'
-        bot.send_sticker(chat_id=message.chat.id, reply_to_message_id=message.message_id, data=message_id)
+    #if message.text.lower() == 'fff':
+    #    message_id = 'CAACAgIAAx0CTFQ_NgACA0dfp93ekYPFqN6jywABe5OZ5snMm4QAAtEAAzDUnRH8Uep02BrfOx4E'
+    #    bot.send_sticker(chat_id=message.chat.id, reply_to_message_id=message.message_id, data=message_id)
+
+    find_trigger_in_message(message)
 
     # print(message)
     if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("враждебных существ",
@@ -183,7 +226,7 @@ def get_text_messages(message):
         # (datetime.utcfromtimestamp(int(message.forward_date)).strftime('%Y-%m-%d %H:%M:%S'))
         msg_date = datetime.utcfromtimestamp(int(message.forward_date))
         date_now = datetime.now().utcnow()
-        add_time = 3 * 60  # * 60
+        add_time = 3 * 60 #* 600
         if re.search("ambush", message.text.lower()):
             add_time = 5 * 60
         if msg_date + timedelta(seconds=add_time) > date_now:
@@ -254,11 +297,7 @@ def check_send_messages(duration, dt, message, btn_fight):
 def get_user_fight_ambush(message_id):
     db = DataBase()
     users = db.select_user_fight_ambush(message_id)
-
-    fight_user = ''
-    for u in users:
-        fight_user += u[0] + '\n'
-
+    fight_user = '\n'.join('.'.join(map(str, s)) for s in users)
     db.close()
     return fight_user
 

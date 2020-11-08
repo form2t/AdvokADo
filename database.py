@@ -104,14 +104,9 @@ class DataBase:
     def add_trigger(self, data):
         data.insert(0, 'DEFAULT')
         data[-1] = str(datetime.utcfromtimestamp(data[-1]))
-
-        #data.insert(len(data), )
-        #data.insert(len(data), 'CURRENT_TIMESTAMP')
-        #query = "INSERT INTO triggers VALUES {0}".format(tuple(data))
         query = f"INSERT INTO triggers VALUES {tuple(data)!r}"
         # [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
 
-        print(query)
         try:
             self.cursor.execute(query)
             self.conn.commit()
@@ -119,12 +114,22 @@ class DataBase:
             self.conn.rollback()
             print("don't add_trigger")
 
-    def is_trigger(self, data):
-        query = f'SELECT * FROM triggers WHERE triggerName = {data!r}'
+    def is_trigger(self, trigger_name, chart_id):
+        query = f'SELECT triggerType, triggerValue FROM triggers WHERE triggerName = {trigger_name!r} and ' \
+                f'userFromChart = {chart_id!r}'
 
-        print(query)
+        #print(query)
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
         except Error as error:
             print("don't is_trigger" + str(Error))
+
+    def get_trigger_list(self, chart_id):
+        query = f'SELECT triggerName FROM triggers WHERE userFromChart = {chart_id!r}'
+
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't get_trigger_list" + str(Error))
