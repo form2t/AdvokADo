@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 import configparser
+from datetime import datetime
 
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -37,10 +38,10 @@ class DataBase:
                                 "ADD UNIQUE KEY `UserID` (`UserID`)) ENGINE=InnoDB DEFAULT CHARSET=utf8")
 
     def __insert_data__(self, table_name, data, add_txt=''):
-        data.insert(0, 'default')
-        data.insert(len(data), 'default')
+        data.insert(0, 'DEFAULT')
+        data.insert(len(data), 'DEFAULT')
         query = "INSERT INTO %s VALUES %r %s;" % (table_name, tuple(data), add_txt)
-        print(query)
+
         try:
             self.cursor.execute(query)
             self.conn.commit()
@@ -71,9 +72,10 @@ class DataBase:
         self.__insert_data__('users', data, add_txt)
 
     def insert_data_ambush(self, data):
-        data.insert(0, 'default')
+        data.insert(0, 'DEFAULT')
         query = "INSERT INTO fightAmbush VALUES {0}".format(tuple(data))
-        print(query)
+        # [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
+
         try:
             self.cursor.execute(query)
             self.conn.commit()
@@ -98,3 +100,31 @@ class DataBase:
             return self.cursor.fetchall()
         except Error as error:
             print("don't select_count_data_fight_ambush")
+
+    def add_trigger(self, data):
+        data.insert(0, 'DEFAULT')
+        data[-1] = str(datetime.utcfromtimestamp(data[-1]))
+
+        #data.insert(len(data), )
+        #data.insert(len(data), 'CURRENT_TIMESTAMP')
+        #query = "INSERT INTO triggers VALUES {0}".format(tuple(data))
+        query = f"INSERT INTO triggers VALUES {tuple(data)!r}"
+        # [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
+
+        print(query)
+        try:
+            self.cursor.execute(query)
+            self.conn.commit()
+        except Error as error:
+            self.conn.rollback()
+            print("don't add_trigger")
+
+    def is_trigger(self, data):
+        query = f'SELECT * FROM triggers WHERE triggerName = {data!r}'
+
+        print(query)
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't is_trigger" + str(Error))
