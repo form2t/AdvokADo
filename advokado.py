@@ -71,6 +71,33 @@ def start_message(message):
         db.close()
 
 
+@bot.message_handler(commands=['get_me'])
+def get_me(message):
+    db = DataBase()
+    try:
+        data = [message.from_user.id, message.chat.id]
+        response = db.select_get_me(data)
+
+        if response:
+            print(response[0][0])
+            # exp, gold, stock, hp, lastHit
+            result = 'Exp = ' + str(response[0][0])
+            result += '\nGolg = ' + str(response[0][1])
+            result += '\nStock = ' + str(response[0][2])
+            result += '\nHp = ' + str(response[0][3])
+            result += '\nLast Hit = ' + str(response[0][4])
+
+            #result = '\n'.join('.'.join(map(str, s)) for s in query)
+            bot.send_message(message.chat.id, '<u><b>Суммарнае показатели:</b></u>\n\n' + result, parse_mode='HTML')
+        else:
+            bot.send_message(message.chat.id, 'Ты еще не нюхал пороха, воин ' + message.from_user.username)
+        db.close()
+    except:
+        print("don't get_me.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
+        db.close()
+
+
 @bot.message_handler(content_types=["new_chat_members"])
 def add_new_member(message):
     try:
@@ -114,7 +141,8 @@ def get_random(message):
         random.seed(message.message_id)
         digit = message.text.lower()[7:].strip()
         if digit.isdigit() and int(digit) > 0:
-            bot.send_message(message.chat.id, str(random.randint(1, int(digit))), reply_to_message_id=message.message_id)
+            bot.send_message(message.chat.id, str(random.randint(1, int(digit))),
+                             reply_to_message_id=message.message_id)
         else:
             bot.send_message(message.chat.id, 'Параметр не является числом, либо он меньше 1',
                              reply_to_message_id=message.message_id)
@@ -123,15 +151,12 @@ def get_random(message):
               + "\n\n" + traceback.format_exc() + "\n\n")
 
 
-
-
 # @bot.message_handler(func=all_castle_bigpisi, commands=['add_trigger'])
 @bot.message_handler(commands=['add_trigger'])
 def add_trigger(message):
     try:
         if message.reply_to_message:
-            if len(message.text.lower()[13:]) >= 3:
-                # если не существует такой триггер
+            if len(message.text.lower()[13:]) >= 3:  # and is_good_name_for_trigger(message.text.lower()):
                 db = DataBase()
 
                 if not db.is_trigger(message.text.lower()[13:], message.chat.id):
@@ -141,9 +166,6 @@ def add_trigger(message):
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.photo:
-                        #print(message.reply_to_message.photo[0].file_id)
-                        #print(len(message.reply_to_message.photo[0].file_id))
-
                         data = [message.text.lower()[13:], message.reply_to_message.photo[0].file_id, "photo",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
@@ -168,7 +190,7 @@ def add_trigger(message):
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     elif message.reply_to_message.text:
-                        data = [message.text.lower()[13:], message.reply_to_message.sticker.file_id, "text",
+                        data = [message.text.lower()[13:], message.reply_to_message.text, "text",
                                 message.from_user.id, message.from_user.username, message.chat.id, message.date]
                         db.add_trigger(data)
                     bot.send_message(message.chat.id, "Триггер '" + message.text[13:] + "' добавлен.")
@@ -178,30 +200,48 @@ def add_trigger(message):
 
                 db.close()
             else:
-                bot.send_message(message.chat.id, "Не задано имя триггера или оно короче 3 символов")
+                bot.send_message(message.chat.id, "Неккоректное имя триггера менее 3 символов")
         else:
             bot.send_message(message.chat.id, "Нет реплейнутого сообщения.")
     except:
+        db.close()
         print("don't add_trigger.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
               + "\n\n" + traceback.format_exc() + "\n\n")
+
+
+@bot.message_handler(commands=['del_trigger'])
+def del_trigger(message):
+    try:
+        db = DataBase()
+        if db.is_trigger(message.text.lower()[13:], message.chat.id):  # если триггер существует
+            db.delete_trigger(message.text.lower()[13:], message.chat.id)  # удалить триггер
+            bot.send_message(message.chat.id, "Триггер '" + message.text[13:] + "' удалён.")
+        else:
+            bot.send_message(message.chat.id, "Триггера '" + message.text[13:] + "' не существует.")
         db.close()
-
-
+    except:
+        db.close()
+        print("don't del_trigger.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
 
 
 # @bot.message_handler(content_types=['sticker'])
 # def get_info_about_messages(message):
 #    print(message)
 
+# def is_good_name_for_trigger(text):
+#   match = re.match('^[а-яА-ЯёЁa-zA-Z0-9]+$', text)
+#  return bool(match)
 
 def find_trigger_in_message(message):
     try:
+        # if is_good_name_for_trigger(message.text.lower()):
         db = DataBase()
-        request = db.is_trigger(message.text.lower(), message.chat.id)
+        response = db.is_trigger(message.text.lower(), message.chat.id)
 
-        if request:
-            trigger_type = ''.join(request[0][0])
-            trigger_value = ''.join(request[0][1])
+        if response:
+            trigger_type = ''.join(response[0][0])
+            trigger_value = ''.join(response[0][1])
 
             if trigger_type == "text":
                 bot.send_message(message.chat.id, trigger_value)
@@ -232,19 +272,31 @@ def find_trigger_in_message(message):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    #if message.text.lower() == 'fff':
-    #    message_id = 'CAACAgIAAx0CTFQ_NgACA0dfp93ekYPFqN6jywABe5OZ5snMm4QAAtEAAzDUnRH8Uep02BrfOx4E'
-    #    bot.send_sticker(chat_id=message.chat.id, reply_to_message_id=message.message_id, data=message_id)
+    if message.forward_from is None:
+        find_trigger_in_message(message)
 
-    find_trigger_in_message(message)
+    if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("встреча",
+                                                                                           message.text.lower()):
 
+        data = [message.message_id, message.forward_date, message.from_user.id, message.from_user.username,
+                message.chat.id]
+        data.extend(get_about_msg(message.text))
+        data.append(message.date)
+
+        db = DataBase()
+        response = db.select_data_fight_ambush_result(data)  # 'forward_date': 1605379349
+        print(response)
+        if len(response) == 0:
+            db.insert_data_fight_ambush_result(data)
+        else:
+            bot.send_message(message.chat.id, text="Данное сообщение внесено ранее")
     # print(message)
     if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("враждебных существ",
                                                                                            message.text.lower()):
         # (datetime.utcfromtimestamp(int(message.forward_date)).strftime('%Y-%m-%d %H:%M:%S'))
         msg_date = datetime.utcfromtimestamp(int(message.forward_date))
         date_now = datetime.now().utcnow()
-        add_time = 3 * 60 #* 600
+        add_time = 3 * 60  # * 600
         if re.search("ambush", message.text.lower()):
             add_time = 5 * 60
         if msg_date + timedelta(seconds=add_time) > date_now:
@@ -270,7 +322,27 @@ def get_text_messages(message):
             unpin_message(message)
 
 
-# '👾Встреча:\n2 x Forbidden Knight lvl.29\n\n🐢[AD]form2t ⚔:135 🛡:127 Lvl: 29\nТвои результаты в бою:\n🔥Exp: 7\n💰Gold: 1\n❤️Hp: -244\n\nТвои удары: 6/7\nАтаки врагов: 5/9\nЛастхит: 2'
+# return info from message.text
+# [msg.message.message_id, msg.from_user.id,msg.from_user.username, msg.chat.id]
+def get_about_msg(txt):
+    try:
+        exp = re.search('Exp:.*?(\d+)', txt)
+        gold = re.search('Gold:.*?(\d+)', txt)
+        stock = re.search('Stock:.*?(\d+)', txt)
+        hp = re.search('Hp:.*?(-?\d+)', txt)
+        last_hit = re.search('Ластхит:.*?(\d+)', txt)
+
+        exp = int(exp.group(1)) if stock else 0
+        gold = int(gold.group(1)) if stock else 0
+        stock = int(stock.group(1)) if stock else 0
+        hp = int(hp.group(1)) if stock else 0
+        last_hit = int(last_hit.group(1)) if last_hit else 0
+        return [exp, gold, stock, hp, last_hit]
+    except:
+        print("don't get_about_msg.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
+
+
 def unpin_message(message):
     try:
         bot.unpin_chat_message(message.chat.id)
@@ -313,11 +385,15 @@ def check_send_messages(duration, dt, message, btn_fight):
 
 # Великолепный план, Уолтер. Просто охуенный, если я правильно понял. Надёжный, блядь, как швейцарские часы.
 def get_user_fight_ambush(message_id):
-    db = DataBase()
-    users = db.select_user_fight_ambush(message_id)
-    fight_user = '\n'.join('.'.join(map(str, s)) for s in users)
-    db.close()
-    return fight_user
+    try:
+        db = DataBase()
+        users = db.select_user_fight_ambush(message_id)
+        fight_user = '\n'.join('.'.join(map(str, s)) for s in users)
+        db.close()
+        return fight_user
+    except:
+        print("don't get_user_fight_ambush.  ~~~" + str(
+            time.strftime("%d.%m.%y %H:%M:%S", time.localtime())) + "\n\n" + traceback.format_exc() + "\n\n")
 
 
 @bot.callback_query_handler(func=lambda msg: re.search('fight', msg.data))

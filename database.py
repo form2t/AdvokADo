@@ -114,11 +114,22 @@ class DataBase:
             self.conn.rollback()
             print("don't add_trigger")
 
+    def delete_trigger(self, trigger_name, chart_id):
+        query = f'DELETE FROM triggers WHERE triggerName = {trigger_name!r} and ' \
+                f'userFromChart = {chart_id!r}'
+        # [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
+
+        try:
+            self.cursor.execute(query)
+            self.conn.commit()
+        except Error as error:
+            self.conn.rollback()
+            print("don't delete_trigger")
+
     def is_trigger(self, trigger_name, chart_id):
         query = f'SELECT triggerType, triggerValue FROM triggers WHERE triggerName = {trigger_name!r} and ' \
                 f'userFromChart = {chart_id!r}'
-
-        #print(query)
+        print(query)
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
@@ -133,3 +144,44 @@ class DataBase:
             return self.cursor.fetchall()
         except Error as error:
             print("don't get_trigger_list" + str(Error))
+
+    #[message.message_id, message.forward_date, message.from_user.id, message.from_user.username,
+    # message.chat.id, exp, gold, stock, hp, last_hit, dateAdded]
+    def select_data_fight_ambush_result(self, data):
+
+        data[1] = str(datetime.utcfromtimestamp(data[1]))
+        query = f'SELECT userFromChart, userName FROM fightAmbushResult where dateMessage = {data[1]!r} and ' \
+                f'idUser = {data[2]!r} and exp = {data[5]!r} and gold = {data[6]!r} '
+        #print(query)
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_data_fight_ambush_result")
+
+    def insert_data_fight_ambush_result(self, data):
+        data.insert(0, 'DEFAULT')
+        #data[2] = str(datetime.utcfromtimestamp(data[1]))
+        data[-1] = str(datetime.utcfromtimestamp(data[-1]))
+
+
+        #print(data)
+        query = "INSERT INTO fightAmbushResult VALUES {0}".format(tuple(data))
+        #print(query)
+        # [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
+
+        try:
+            self.cursor.execute(query)
+            self.conn.commit()
+        except Error as error:
+            self.conn.rollback()
+            print("don't insert_data_fight_ambush_result")
+
+    def select_get_me(self, data):
+        query = f'SELECT sum(exp), sum(gold), sum(stock), sum(hp), sum(lastHit)  FROM fightAmbushResult where idUser = {data[0]!r} group by idUser'
+        #print(query)
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_get_me")
