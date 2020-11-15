@@ -178,8 +178,9 @@ class DataBase:
             print("don't insert_data_fight_ambush_result")
 
     def select_get_me(self, data):
-        query = f'SELECT sum(exp), sum(gold), sum(stock), sum(hp), sum(lastHit)  FROM fightAmbushResult where idUser = {data[0]!r} group by idUser'
-        #print(query)
+        query = f'SELECT count(exp), sum(exp), sum(gold), sum(stock), sum(hp), sum(lastHit), sum(knockout) ' \
+                f'FROM fightAmbushResult where idUser = {data[0]!r} group by idUser'
+
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()

@@ -79,16 +79,17 @@ def get_me(message):
         response = db.select_get_me(data)
 
         if response:
-            print(response[0][0])
             # exp, gold, stock, hp, lastHit
-            result = 'Exp = ' + str(response[0][0])
-            result += '\nGolg = ' + str(response[0][1])
-            result += '\nStock = ' + str(response[0][2])
-            result += '\nHp = ' + str(response[0][3])
-            result += '\nLast Hit = ' + str(response[0][4])
+            result = 'Battle count = ' + str(response[0][0])
+            result += '\nExp = ' + str(response[0][1])
+            result += '\nGolg = ' + str(response[0][2])
+            result += '\nStock = ' + str(response[0][3])
+            result += '\nHp = ' + str(response[0][4])
+            result += '\nLast Hit = ' + str(response[0][5])
+            result += '\nKnockout = ' + str(response[0][6])
 
             #result = '\n'.join('.'.join(map(str, s)) for s in query)
-            bot.send_message(message.chat.id, '<u><b>Суммарнае показатели:</b></u>\n\n' + result, parse_mode='HTML')
+            bot.send_message(message.chat.id, '<u><b>Summary:</b></u>\n\n' + result, parse_mode='HTML')
         else:
             bot.send_message(message.chat.id, 'Ты еще не нюхал пороха, воин ' + message.from_user.username)
         db.close()
@@ -285,11 +286,13 @@ def get_text_messages(message):
 
         db = DataBase()
         response = db.select_data_fight_ambush_result(data)  # 'forward_date': 1605379349
-        print(response)
-        if len(response) == 0:
+
+        #if len(response) == 0:
+        if not response:
             db.insert_data_fight_ambush_result(data)
         else:
-            bot.send_message(message.chat.id, text="Данное сообщение внесено ранее")
+            bot.send_message(message.chat.id, text="Репорт уже занесен в базу",
+                             reply_to_message_id=message.message_id)
     # print(message)
     if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("враждебных существ",
                                                                                            message.text.lower()):
@@ -331,13 +334,16 @@ def get_about_msg(txt):
         stock = re.search('Stock:.*?(\d+)', txt)
         hp = re.search('Hp:.*?(-?\d+)', txt)
         last_hit = re.search('Ластхит:.*?(\d+)', txt)
+        knockout = re.search('В нокауте:.*?(\d+)', txt)
 
-        exp = int(exp.group(1)) if stock else 0
-        gold = int(gold.group(1)) if stock else 0
+        print(exp, gold, stock, hp, last_hit)
+        exp = int(exp.group(1)) if exp else 0
+        gold = int(gold.group(1)) if gold else 0
         stock = int(stock.group(1)) if stock else 0
-        hp = int(hp.group(1)) if stock else 0
+        hp = int(hp.group(1)) if hp else 0
         last_hit = int(last_hit.group(1)) if last_hit else 0
-        return [exp, gold, stock, hp, last_hit]
+        knockout = int(knockout.group(1)) if knockout else 0
+        return [exp, gold, stock, hp, last_hit, knockout]
     except:
         print("don't get_about_msg.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
               + "\n\n" + traceback.format_exc() + "\n\n")
@@ -433,5 +439,5 @@ while True:
     except:
         bot.stop_polling()
         time.sleep(5)
-        print("Я умер.  ~~~" + str(
+        print("Бот пал.  ~~~" + str(
             time.strftime("%d.%m.%y %H:%M:%S", time.localtime())) + "\n\n" + traceback.format_exc() + "\n\n")
