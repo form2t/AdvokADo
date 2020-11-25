@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import traceback
 import threading
 from database import DataBase
+import drawer
 
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -88,13 +89,81 @@ def get_me(message):
             result += '\nLast Hit = ' + str(response[0][5])
             result += '\nKnockout = ' + str(response[0][6])
 
-            #result = '\n'.join('.'.join(map(str, s)) for s in query)
+            # result = '\n'.join('.'.join(map(str, s)) for s in query)
             bot.send_message(message.chat.id, '<u><b>Summary:</b></u>\n\n' + result, parse_mode='HTML')
         else:
             bot.send_message(message.chat.id, 'Ты еще не нюхал пороха, воин ' + message.from_user.username)
         db.close()
     except:
         print("don't get_me.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
+        db.close()
+
+
+@bot.message_handler(commands=['get_topchik'])
+def get_me(message):
+    db = DataBase()
+    try:
+        result = ''
+        response = db.select_top_count_battle(1)
+        if response:
+            result = '<u><b>Самый впрягающийся</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+
+        response = db.select_top_last_hit(1)
+        if response:
+            result += '<u><b>Убийца</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+
+        response = db.select_top_exp(1)
+        if response:
+            result += '<u><b>Самый опытный</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+
+        response = db.select_top_gold(1)
+        if response:
+            result += '<u><b>Самый богатый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+
+        response = db.select_top_stock(1)
+        if response:
+            result += '<u><b>Самый запасливый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+
+        response = db.select_top_hp(1)
+        if response:
+            result += '<u><b>Человек-месиво</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+            # result = '\n'.join('.'.join(map(str, s)) for s in query)
+
+        response = db.select_top_knockout(1)
+        if response:
+            result += '<u><b>Человек-зомби</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+            # result = '\n'.join('.'.join(map(str, s)) for s in query)
+
+        if result != '':
+            bot.send_message(message.chat.id, result, parse_mode='HTML')
+        else:
+            bot.send_message(message.chat.id, 'Нет еще топчика в этом чатике)')
+        db.close()
+    except:
+        print("don't get_topchik.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
+              + "\n\n" + traceback.format_exc() + "\n\n")
+        db.close()
+
+
+@bot.message_handler(commands=['get_all'])
+def get_all(message):
+    db = DataBase()
+    try:
+
+        response = db.select_get_all()
+
+        if response:
+            result = '\n'.join('\t'.join(map(str, s)) for s in response)
+            drawer.create_image(result)
+            bot.send_photo(message.chat.id, photo=open('result.png', 'rb'))
+            # result = '\n'.join('.'.join(map(str, s)) for s in query)
+            # bot.send_message(message.chat.id, '<u><b>Summary:</b></u>\n\n' + result, parse_mode='HTML')
+        else:
+            bot.send_message(message.chat.id, 'Случилась какая-то херня с get_all')
+        db.close()
+    except:
+        print("don't get_all.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
               + "\n\n" + traceback.format_exc() + "\n\n")
         db.close()
 
@@ -287,7 +356,7 @@ def get_text_messages(message):
         db = DataBase()
         response = db.select_data_fight_ambush_result(data)  # 'forward_date': 1605379349
 
-        #if len(response) == 0:
+        # if len(response) == 0:
         if not response:
             db.insert_data_fight_ambush_result(data)
         else:

@@ -145,14 +145,14 @@ class DataBase:
         except Error as error:
             print("don't get_trigger_list" + str(Error))
 
-    #[message.message_id, message.forward_date, message.from_user.id, message.from_user.username,
+    # [message.message_id, message.forward_date, message.from_user.id, message.from_user.username,
     # message.chat.id, exp, gold, stock, hp, last_hit, dateAdded]
     def select_data_fight_ambush_result(self, data):
 
         data[1] = str(datetime.utcfromtimestamp(data[1]))
         query = f'SELECT userFromChart, userName FROM fightAmbushResult where dateMessage = {data[1]!r} and ' \
                 f'idUser = {data[2]!r} and exp = {data[5]!r} and gold = {data[6]!r} '
-        #print(query)
+        # print(query)
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
@@ -161,13 +161,12 @@ class DataBase:
 
     def insert_data_fight_ambush_result(self, data):
         data.insert(0, 'DEFAULT')
-        #data[2] = str(datetime.utcfromtimestamp(data[1]))
+        # data[2] = str(datetime.utcfromtimestamp(data[1]))
         data[-1] = str(datetime.utcfromtimestamp(data[-1]))
 
-
-        #print(data)
+        # print(data)
         query = "INSERT INTO fightAmbushResult VALUES {0}".format(tuple(data))
-        #print(query)
+        # print(query)
         # [msg.message.message_id, msg.from_user.id, msg.from_user.username, msg.message.chat.id]
 
         try:
@@ -186,3 +185,76 @@ class DataBase:
             return self.cursor.fetchall()
         except Error as error:
             print("don't select_get_me")
+
+    def select_get_all(self):
+        query = 'SELECT  count(exp), sum(exp), sum(gold), sum(stock), sum(hp), sum(lastHit), sum(knockout), userName ' \
+                'FROM fightAmbushResult group by idUser order by sum(lastHit) DESC'
+
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_get_all")
+
+    def select_top_count_battle(self, value):
+        query = f"SELECT  count(exp), userName FROM fightAmbushResult group by idUser order by count(exp) " \
+                f"DESC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_count_battle")
+
+    def select_top_exp(self, value):
+        query = f"SELECT  sum(exp), userName FROM fightAmbushResult group by idUser order by sum(exp) " \
+                f"DESC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_exp")
+
+    def select_top_gold(self, value):
+        query = f"SELECT  sum(gold), userName FROM fightAmbushResult group by idUser order by sum(gold) " \
+                f"DESC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_gold")
+
+    def select_top_stock(self, value):
+        query = f"SELECT  sum(stock), userName FROM fightAmbushResult group by idUser order by sum(stock) " \
+                f"DESC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_stock")
+
+    def select_top_hp(self, value):
+        query = f"SELECT  sum(hp), userName FROM fightAmbushResult group by idUser order by sum(hp) " \
+                f"ASC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_hp")
+
+    def select_top_last_hit(self, value):
+        query = f"SELECT  sum(lastHit), userName FROM fightAmbushResult group by idUser order by sum(lastHit) " \
+                f"DESC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_last_hit")
+
+    def select_top_knockout(self, value):
+        query = f"SELECT  sum(knockout), userName FROM fightAmbushResult group by idUser order by sum(knockout) " \
+                f"DESC limit {value!r}"
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Error as error:
+            print("don't select_top_last_hit")
