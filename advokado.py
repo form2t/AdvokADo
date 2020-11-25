@@ -304,6 +304,7 @@ def del_trigger(message):
 #  return bool(match)
 
 def find_trigger_in_message(message):
+    print(message)
     try:
         # if is_good_name_for_trigger(message.text.lower()):
         db = DataBase()
@@ -338,6 +339,13 @@ def find_trigger_in_message(message):
     except:
         print("don't find_trigger_in_message.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
               + "\n\n" + traceback.format_exc() + "\n\n")
+
+
+@bot.message_handler(content_types=['sticker'])
+def congratulation_level_up(message):
+    if re.search('ChatwarsLevels', message.sticker.set_name):
+        bot.send_message(message.chat.id, text="Грац! Совсем большой стал, @{0}!".format(message.from_user.username,
+                                                                                         reply_to_message_id=message.message_id))
 
 
 @bot.message_handler(content_types=['text'])
