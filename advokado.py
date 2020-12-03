@@ -1,3 +1,5 @@
+#!/usr/bin/env python#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import random
 import schedule as schedule
 import telebot
@@ -8,7 +10,8 @@ from datetime import datetime, timedelta
 import traceback
 import threading
 from database import DataBase
-import drawer
+
+# import drawer #чекнуть что с этой залупой
 
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -49,13 +52,6 @@ def ping_for_battle():
     except:
         print("don't ping_for_battle.  ~~~" + str(
             time.strftime("%d.%m.%y %H:%M:%S", time.localtime())) + "\n\n" + traceback.format_exc() + "\n\n")
-
-
-schedule.every().day.at("13:00").do(go_to_arena)
-schedule.every().day.at("00:55").do(ping_for_battle)
-# schedule.every(1).minutes.do(ping_for_battle)
-schedule.every().day.at("16:55").do(ping_for_battle)
-schedule.every().day.at("08:55").do(ping_for_battle)
 
 
 @bot.message_handler(commands=['start'])
@@ -101,45 +97,49 @@ def get_me(message):
 
 
 @bot.message_handler(commands=['get_topchik'])
-def get_me(message):
+def get_topchik_msg(message):
+    get_topchik(False)
+
+
+def get_topchik(week=True):
     db = DataBase()
     try:
         result = ''
-        response = db.select_top_count_battle(1)
+        response = db.select_top_count_battle(1, week)
         if response:
             result = '<u><b>Самый впрягающийся</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
 
-        response = db.select_top_last_hit(1)
+        response = db.select_top_last_hit(1, week)
         if response:
             result += '<u><b>Убийца</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
 
-        response = db.select_top_exp(1)
+        response = db.select_top_exp(1, week)
         if response:
             result += '<u><b>Самый опытный</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
 
-        response = db.select_top_gold(1)
+        response = db.select_top_gold(1, week)
         if response:
             result += '<u><b>Самый богатый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
 
-        response = db.select_top_stock(1)
+        response = db.select_top_stock(1, week)
         if response:
             result += '<u><b>Самый запасливый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
 
-        response = db.select_top_hp(1)
+        response = db.select_top_hp(1, week)
         if response:
             result += '<u><b>Человек-месиво</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
             # result = '\n'.join('.'.join(map(str, s)) for s in query)
 
-        response = db.select_top_knockout(1)
+        response = db.select_top_knockout(1, week)
         if response:
             result += '<u><b>Человек-зомби</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
             # result = '\n'.join('.'.join(map(str, s)) for s in query)
 
-        if result != '':
-            bot.send_message(message.chat.id, result, parse_mode='HTML')
-        else:
-            bot.send_message(message.chat.id, 'Нет еще топчика в этом чатике)')
         db.close()
+        if result != '':
+            bot.send_message(ADEPT_ID, result, parse_mode='HTML')
+        else:
+            bot.send_message(ADEPT_ID, 'Нет еще топчика в этом чатике)')
     except:
         print("don't get_topchik.  ~~~" + str(time.strftime("%d.%m.%y %H:%M:%S", time.localtime()))
               + "\n\n" + traceback.format_exc() + "\n\n")
@@ -155,7 +155,7 @@ def get_all(message):
 
         if response:
             result = '\n'.join('\t'.join(map(str, s)) for s in response)
-            drawer.create_image(result)
+            # drawer.create_image(result)
             bot.send_photo(message.chat.id, photo=open('result.png', 'rb'))
             # result = '\n'.join('.'.join(map(str, s)) for s in query)
             # bot.send_message(message.chat.id, '<u><b>Summary:</b></u>\n\n' + result, parse_mode='HTML')
@@ -343,13 +343,17 @@ def find_trigger_in_message(message):
 
 @bot.message_handler(content_types=['sticker'])
 def congratulation_level_up(message):
-    if re.search('ChatwarsLevels', message.sticker.set_name):
+    if message.sticker.set_name == 'ChatwarsLevels':
         bot.send_message(message.chat.id, text="Грац! Совсем большой стал, @{0}!".format(message.from_user.username,
                                                                                          reply_to_message_id=message.message_id))
+    elif message.sticker.set_name == 'ChatwarsLevelsF':
+        bot.send_message(message.chat.id, text="Грац! Совсем большая стала, @{0}!".format(message.from_user.username,
+                                                                                          reply_to_message_id=message.message_id))
 
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
+    print(message.chat.id)
     if message.forward_from is None:
         find_trigger_in_message(message)
 
@@ -459,7 +463,7 @@ def check_send_messages(duration, dt, message, btn_fight):
 
         fight_user = get_user_fight_ambush(message.message_id)
         bot.edit_message_text(chat_id=ADEPT_ID, message_id=message.message_id,
-                              text="<u><b>Killer's Ambush</b></u>\n\n" + fight_user + "\nTime left "
+                              text="<u><b>Killer's Ambush</b></u>\n\n" + fight_user + "\n\nTime left "
                                    + '{:02}:{:02}'.format(duration // 60, duration % 60),
                               reply_markup=btn_fight, parse_mode='HTML')
 
@@ -499,8 +503,8 @@ def callback_inline_first(msg):
                 fight_user = get_user_fight_ambush(msg.message.message_id)
 
                 bot.edit_message_text(chat_id=ADEPT_ID, message_id=msg.message.message_id,
-                                      text="<u><b>Killer's Ambush</b></u>\n\n" + fight_user + "\n" + msg.message.text[
-                                                                                                     -15:],
+                                      text="<u><b>Killer's Ambush</b></u>\n\n" + fight_user + "\n\n" + msg.message.text[
+                                                                                                       -15:],
                                       reply_markup=get_two_button_fight(msg.data),
                                       parse_mode='HTML')
         db.close()
@@ -509,6 +513,14 @@ def callback_inline_first(msg):
         print("don't insert from callback_inline_first.  ~~~" + str(
             time.strftime("%d.%m.%y %H:%M:%S", time.localtime())) + "\n\n" + traceback.format_exc() + "\n\n")
 
+
+schedule.every().monday.at("12:00").do(get_topchik)
+#schedule.every().thursday.at("06:15").do(get_topchik)
+schedule.every().day.at("13:00").do(go_to_arena)
+schedule.every().day.at("00:55").do(ping_for_battle)
+# schedule.every(1).minutes.do(ping_for_battle)
+schedule.every().day.at("16:55").do(ping_for_battle)
+schedule.every().day.at("08:55").do(ping_for_battle)
 
 while True:
     try:

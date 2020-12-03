@@ -196,8 +196,11 @@ class DataBase:
         except Error as error:
             print("don't select_get_all")
 
-    def select_top_count_battle(self, value):
-        query = f"SELECT  count(exp), userName FROM fightAmbushResult group by idUser order by count(exp) " \
+    def select_top_count_battle(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+        query = f"SELECT  count(exp), userName FROM fightAmbushResult {condition} group by idUser order by count(exp) " \
                 f"DESC limit {value!r}"
         try:
             self.cursor.execute(query)
@@ -205,8 +208,11 @@ class DataBase:
         except Error as error:
             print("don't select_top_count_battle")
 
-    def select_top_exp(self, value):
-        query = f"SELECT  sum(exp), userName FROM fightAmbushResult group by idUser order by sum(exp) " \
+    def select_top_exp(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+        query = f"SELECT  sum(exp), userName FROM fightAmbushResult {condition} group by idUser order by sum(exp) " \
                 f"DESC limit {value!r}"
         try:
             self.cursor.execute(query)
@@ -214,8 +220,12 @@ class DataBase:
         except Error as error:
             print("don't select_top_exp")
 
-    def select_top_gold(self, value):
-        query = f"SELECT  sum(gold), userName FROM fightAmbushResult group by idUser order by sum(gold) " \
+    def select_top_gold(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+
+        query = f"SELECT  sum(gold), userName FROM fightAmbushResult {condition} group by idUser order by sum(gold) " \
                 f"DESC limit {value!r}"
         try:
             self.cursor.execute(query)
@@ -223,8 +233,11 @@ class DataBase:
         except Error as error:
             print("don't select_top_gold")
 
-    def select_top_stock(self, value):
-        query = f"SELECT  sum(stock), userName FROM fightAmbushResult group by idUser order by sum(stock) " \
+    def select_top_stock(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+        query = f"SELECT  sum(stock), userName FROM fightAmbushResult {condition} group by idUser order by sum(stock) " \
                 f"DESC limit {value!r}"
         try:
             self.cursor.execute(query)
@@ -232,8 +245,11 @@ class DataBase:
         except Error as error:
             print("don't select_top_stock")
 
-    def select_top_hp(self, value):
-        query = f"SELECT  sum(hp), userName FROM fightAmbushResult group by idUser order by sum(hp) " \
+    def select_top_hp(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+        query = f"SELECT  sum(hp), userName FROM fightAmbushResult {condition} group by idUser order by sum(hp) " \
                 f"ASC limit {value!r}"
         try:
             self.cursor.execute(query)
@@ -241,20 +257,27 @@ class DataBase:
         except Error as error:
             print("don't select_top_hp")
 
-    def select_top_last_hit(self, value):
-        query = f"SELECT  sum(lastHit), userName FROM fightAmbushResult group by idUser order by sum(lastHit) " \
-                f"DESC limit {value!r}"
+    def select_top_last_hit(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+        query = f"SELECT  sum(lastHit), userName FROM fightAmbushResult {condition} group by idUser order by sum(" \
+                f"lastHit) DESC limit {value!r}"
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
         except Error as error:
             print("don't select_top_last_hit")
 
-    def select_top_knockout(self, value):
-        query = f"SELECT  sum(knockout), userName FROM fightAmbushResult group by idUser order by sum(knockout) " \
-                f"DESC limit {value!r}"
+    def select_top_knockout(self, value, week=False):
+        condition = ""
+        if week:
+            condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
+        query = f"SELECT  sum(knockout), userName FROM fightAmbushResult {condition} group by idUser order by sum(" \
+                f"knockout) DESC limit {value!r}"
+
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
         except Error as error:
-            print("don't select_top_last_hit")
+            print("don't select_top_knockout")
