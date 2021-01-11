@@ -304,18 +304,31 @@ def del_trigger(message):
 #  return bool(match)
 
 def find_trigger_in_message(message):
-    print(message)
     try:
         # if is_good_name_for_trigger(message.text.lower()):
         db = DataBase()
-        response = db.is_trigger(message.text.lower(), message.chat.id)
+        txt = message.text.lower()
+        digit = '1'
+        get = False
+        if re.search("дай", message.text.lower()):
+            if txt.split(' ')[-1].isdigit():
+                digit = int(txt.split(' ')[-1])
+            txt = ' '.join(txt.split(' ')[:-1])
+            get = True
+
+        response = db.is_trigger(txt, message.chat.id)
 
         if response:
             trigger_type = ''.join(response[0][0])
             trigger_value = ''.join(response[0][1])
 
-            if trigger_type == "text":
+            if trigger_type == "text" and not get:
                 bot.send_message(message.chat.id, trigger_value)
+            if trigger_type == "text" and get:
+                print('/g_withdraw ' + ' '.join(multiply(trigger_value.split(' '), int(digit))))
+                bot.send_message(message.chat.id, '<pre>/g_withdraw ' + ' '.join(multiply(trigger_value.split(' '),
+                                                                                          int(digit))) + '</pre>',
+                                 parse_mode='HTML')
             elif trigger_type == "sticker":
                 bot.send_sticker(message.chat.id, trigger_value)
             elif trigger_type == "voice":
@@ -341,6 +354,10 @@ def find_trigger_in_message(message):
               + "\n\n" + traceback.format_exc() + "\n\n")
 
 
+def multiply(arr, ind):
+    return [str(int(x) * ind) if i % 2 == 1 else x for i, x in enumerate(arr)]
+
+
 @bot.message_handler(content_types=['sticker'])
 def congratulation_level_up(message):
     if message.sticker.set_name == 'ChatwarsLevels':
@@ -353,7 +370,6 @@ def congratulation_level_up(message):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    print(message.chat.id)
     if message.forward_from is None:
         find_trigger_in_message(message)
 
@@ -515,7 +531,7 @@ def callback_inline_first(msg):
 
 
 schedule.every().monday.at("12:00").do(get_topchik)
-#schedule.every().thursday.at("06:15").do(get_topchik)
+# schedule.every().thursday.at("06:15").do(get_topchik)
 schedule.every().day.at("13:00").do(go_to_arena)
 schedule.every().day.at("00:55").do(ping_for_battle)
 # schedule.every(1).minutes.do(ping_for_battle)
