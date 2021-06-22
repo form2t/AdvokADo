@@ -105,34 +105,42 @@ def get_topchik(week=True):
     db = DataBase()
     try:
         result = ''
-        response = db.select_top_count_battle(1, week)
+        response = db.select_top_count_battle(0, week)
         if response:
-            result = '<u><b>Самый впрягающийся</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+            count = 0
+            result += '<u><b>Количество битв с мобами за неделю:</b></u>\n'
+            for s in response:
+                count += 1
+                result += '\n{0}#\t{1} = {2}'.format(str(count), str(s[0]), str(s[1]))
 
-        response = db.select_top_last_hit(1, week)
-        if response:
-            result += '<u><b>Убийца</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
-
-        response = db.select_top_exp(1, week)
-        if response:
-            result += '<u><b>Самый опытный</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
-
-        response = db.select_top_gold(1, week)
-        if response:
-            result += '<u><b>Самый богатый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
-
-        response = db.select_top_stock(1, week)
-        if response:
-            result += '<u><b>Самый запасливый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
-
-        response = db.select_top_hp(1, week)
-        if response:
-            result += '<u><b>Человек-месиво</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
-            # result = '\n'.join('.'.join(map(str, s)) for s in query)
-
-        response = db.select_top_knockout(1, week)
-        if response:
-            result += '<u><b>Человек-зомби</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        # response = db.select_top_count_battle(1, week)
+        # if response:
+        #     result = '<u><b>Самый впрягающийся</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        #
+        # response = db.select_top_last_hit(1, week)
+        # if response:
+        #     result += '<u><b>Убийца</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        #
+        # response = db.select_top_exp(1, week)
+        # if response:
+        #     result += '<u><b>Самый опытный</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        #
+        # response = db.select_top_gold(1, week)
+        # if response:
+        #     result += '<u><b>Самый богатый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        #
+        # response = db.select_top_stock(1, week)
+        # if response:
+        #     result += '<u><b>Самый запасливый</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        #
+        # response = db.select_top_hp(1, week)
+        # if response:
+        #     result += '<u><b>Человек-месиво</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
+        #     # result = '\n'.join('.'.join(map(str, s)) for s in query)
+        #
+        # response = db.select_top_knockout(1, week)
+        # if response:
+        #     result += '<u><b>Человек-зомби</b></u>\n{0}\t{1}\n\n'.format(str(response[0][1]), str(response[0][0]))
             # result = '\n'.join('.'.join(map(str, s)) for s in query)
 
         db.close()
@@ -310,6 +318,11 @@ def find_trigger_in_message(message):
         txt = message.text.lower()
         digit = '1'
         get = False
+        sendTo = message.chat.id
+
+        if re.search("дайлс", message.text.lower()):
+            sendTo = message.from_user.id
+
         if re.search("дай", message.text.lower()):
             if txt.split(' ')[-1].isdigit():
                 digit = int(txt.split(' ')[-1])
@@ -325,8 +338,7 @@ def find_trigger_in_message(message):
             if trigger_type == "text" and not get:
                 bot.send_message(message.chat.id, trigger_value)
             if trigger_type == "text" and get:
-                print('/g_withdraw ' + ' '.join(multiply(trigger_value.split(' '), int(digit))))
-                bot.send_message(message.chat.id, '<pre>/g_withdraw ' + ' '.join(multiply(trigger_value.split(' '),
+                bot.send_message(sendTo, '<pre>/g_withdraw ' + ' '.join(multiply(trigger_value.split(' '),
                                                                                           int(digit))) + '</pre>',
                                  parse_mode='HTML')
             elif trigger_type == "sticker":
@@ -373,6 +385,7 @@ def get_text_messages(message):
     if message.forward_from is None:
         find_trigger_in_message(message)
 
+    print(message)
     if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("встреча",
                                                                                            message.text.lower()):
 
@@ -390,7 +403,7 @@ def get_text_messages(message):
         else:
             bot.send_message(message.chat.id, text="Репорт уже занесен в базу",
                              reply_to_message_id=message.message_id)
-    # print(message)
+
     if message.forward_from is not None and message.forward_from.id == cw_ID and re.search("враждебных существ",
                                                                                            message.text.lower()):
         # (datetime.utcfromtimestamp(int(message.forward_date)).strftime('%Y-%m-%d %H:%M:%S'))
@@ -398,7 +411,7 @@ def get_text_messages(message):
         date_now = datetime.now().utcnow()
         add_time = 3 * 60  # * 600
         if re.search("ambush", message.text.lower()):
-            add_time = 5 * 60
+            add_time = 6 * 60
         if msg_date + timedelta(seconds=add_time) > date_now:
             bot.pin_chat_message(message.chat.id, message.message_id)
 
@@ -419,7 +432,7 @@ def get_text_messages(message):
 
         else:
             bot.pin_chat_message(message.chat.id, message.message_id)
-            unpin_message(message)
+            #unpin_message(message)
 
 
 # return info from message.text

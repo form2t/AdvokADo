@@ -196,24 +196,33 @@ class DataBase:
         except Error as error:
             print("don't select_get_all")
 
-    def select_top_count_battle(self, value, week=False):
+    def select_top_count_battle(self, value=0, week=False):
         condition = ""
+        limit = ""
         if week:
             condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
-        query = f"SELECT  count(exp), userName FROM fightAmbushResult {condition} group by idUser order by count(exp) " \
-                f"DESC limit {value!r}"
+        if value != 0:
+            limit = f"limit {value!r}"
+
+        query = f"SELECT  userName, count(exp) FROM fightAmbushResult {condition} group by idUser order by count(exp) DESC " \
+                f"{limit}"
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
         except Error as error:
             print("don't select_top_count_battle")
 
-    def select_top_exp(self, value, week=False):
+    def select_top_exp(self, value=0, week=False):
         condition = ""
+        limit = ""
+        if value != 0:
+            limit = f"limit {value!r}"
         if week:
             condition = "WHERE dateMessage BETWEEN  NOW() - INTERVAL 7 DAY and  Now()"
-        query = f"SELECT  sum(exp), userName FROM fightAmbushResult {condition} group by idUser order by sum(exp) " \
-                f"DESC limit {value!r}"
+
+
+        query = f"SELECT  sum(exp), userName FROM fightAmbushResult {condition} group by idUser order by sum(exp) DESC " \
+                f"{limit}"
         try:
             self.cursor.execute(query)
             return self.cursor.fetchall()
